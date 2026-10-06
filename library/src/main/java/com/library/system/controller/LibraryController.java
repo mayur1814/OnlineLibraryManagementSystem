@@ -6,124 +6,245 @@ import com.library.system.model.User;
 import com.library.system.repository.BookRepository;
 import com.library.system.repository.IssueReturnRepository;
 import com.library.system.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@CrossOrigin(origins = "*")
 public class LibraryController {
+    private final UserRepository userRepository;
+    private final BookRepository bookRepository;
+    private final IssueReturnRepository issueReturnRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private UserRepository userRepository;
+    public LibraryController(
+            UserRepository userRepository,
+            BookRepository bookRepository,
+            IssueReturnRepository issueReturnRepository,
+            PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.bookRepository = bookRepository;
+        this.issueReturnRepository = issueReturnRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
-    @Autowired
-    private BookRepository bookRepository;
-
-    @Autowired
-    private IssueReturnRepository issueReturnRepository;
-
-    // 1. Register Student
     @PostMapping("/register")
-    public String registerUser(@RequestBody User user) {
-        Optional<User> existing = userRepository.findByEmail(user.getEmail());
-        if (existing.isPresent()) {
-            return "Error: Email already exists!";
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
+        if (user.getName() == null || user.getName().isBlank()
+                || user.getEmail() == null || user.getEmail().isBlank()
+                || user.getPassword() == null || user.getPassword().isBlank()) {
+            return ResponseEntity.badRequest().body("Name, email, and password are required.");
         }
-        user.setRole("STUDENT"); // Default role
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("An account with this email already exists.");
+        }
+
+        user.setRole("STUDENT");
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
-        return "Registration successful!";
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "Registration successful."));
     }
 
-    // 2. Login
     @PostMapping("/login")
-    public String loginUser(@RequestBody User loginData) {
-        Optional<User> userOpt = userRepository.findByEmail(loginData.getEmail());
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            if (user.getPassword().equals(loginData.getPassword())) {
-                return "Login successful! Role: " + user.getRole();
-            }
+    @Transactional
+    public ResponseEntity<?> loginUser(
+            @RequestBody User loginData, HttpServletRequest request, HttpSession session) {
+        if (loginData.getEmail() == null || loginData.getPassword() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password.");
         }
-        return "Invalid email or password!";
+        Optional<User> userOpt = userRepository.findByEmail(loginData.getEmail());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password.");
+        }
+
+        User user = userOpt.get();
+        String storedPassword = user.getPassword();
+        boolean encodedPassword = storedPassword != null && storedPassword.startsWith("$2");
+        boolean passwordMatches = encodedPassword
+                ? passwordEncoder.matches(loginData.getPassword(), storedPassword)
+                : loginData.getPassword().equals(storedPassword);
+        if (!passwordMatches) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password.");
+        }
+        if (!encodedPassword) {
+            user.setPassword(passwordEncoder.encode(loginData.getPassword()));
+            userRepository.save(user);
+        }
+
+        String role = user.getRole() == null ? "STUDENT" : user.getRole();
+        request.changeSessionId();
+        session.setAttribute("userId", user.getId());
+        session.setAttribute("role", role);
+        return ResponseEntity.ok(Map.of(
+                "id", user.getId(),
+                "name", user.getName(),
+                "email", user.getEmail(),
+                "role", role));
     }
 
-    // 3. Get All Books
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpSession session) {
+        session.invalidate();
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/books")
     public List<Book> getAllBooks() {
         return bookRepository.findAll();
     }
 
-    // 4. Get Book by ID
     @GetMapping("/books/{id}")
-    public Book getBookById(@PathVariable Long id) {
-        return bookRepository.findById(id).orElse(null);
+    public ResponseEntity<?> getBookById(@PathVariable Long id) {
+        return bookRepository.findById(id)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // 5. Add a Book (Admin)
     @PostMapping("/books")
-    public Book addBook(@RequestBody Book book) {
-        return bookRepository.save(book);
+    public ResponseEntity<?> addBook(@RequestBody Book book, HttpSession session) {
+        if (!isAdmin(session)) {
+            return unauthorized();
+        }
+        if (!hasValidBookDetails(book)) {
+            return ResponseEntity.badRequest().body("Title, author, category, and a non-negative quantity are required.");
+        }
+        book.setId(null);
+        book.setStatus(book.getQuantity() > 0 ? "AVAILABLE" : "UNAVAILABLE");
+        return ResponseEntity.status(HttpStatus.CREATED).body(bookRepository.save(book));
     }
 
-    // 6. Update a Book (Admin)
     @PutMapping("/books/{id}")
-    public Book updateBook(@PathVariable Long id, @RequestBody Book bookDetails) {
-        Book book = bookRepository.findById(id).orElse(null);
-        if (book != null) {
-            book.setTitle(bookDetails.getTitle());
-            book.setAuthor(bookDetails.getAuthor());
-            book.setCategory(bookDetails.getCategory());
-            book.setQuantity(bookDetails.getQuantity());
-            book.setStatus(bookDetails.getStatus());
-            return bookRepository.save(book);
+    public ResponseEntity<?> updateBook(@PathVariable Long id, @RequestBody Book details, HttpSession session) {
+        if (!isAdmin(session)) {
+            return unauthorized();
         }
-        return null;
+        if (!hasValidBookDetails(details)) {
+            return ResponseEntity.badRequest().body("Title, author, category, and a non-negative quantity are required.");
+        }
+        Optional<Book> existing = bookRepository.findById(id);
+        if (existing.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Book book = existing.get();
+        book.setTitle(details.getTitle());
+        book.setAuthor(details.getAuthor());
+        book.setCategory(details.getCategory());
+        book.setQuantity(details.getQuantity());
+        book.setStatus(details.getQuantity() > 0 ? "AVAILABLE" : "UNAVAILABLE");
+        return ResponseEntity.ok(bookRepository.save(book));
     }
 
-    // 7. Delete a Book (Admin)
     @DeleteMapping("/books/{id}")
-    public String deleteBook(@PathVariable Long id) {
+    public ResponseEntity<?> deleteBook(@PathVariable Long id, HttpSession session) {
+        if (!isAdmin(session)) {
+            return unauthorized();
+        }
+        if (!bookRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
         bookRepository.deleteById(id);
-        return "Book deleted successfully!";
+        return ResponseEntity.noContent().build();
     }
 
-    // 8. Issue a Book
     @PostMapping("/issue")
-    public String issueBook(@RequestBody IssueReturn issueRequest) {
-        Book book = bookRepository.findById(issueRequest.getBookId()).orElse(null);
-        if (book != null && book.getQuantity() > 0) {
-            book.setQuantity(book.getQuantity() - 1);
-            if(book.getQuantity() == 0) {
-                book.setStatus("UNAVAILABLE");
-            }
-            bookRepository.save(book);
-
-            issueRequest.setStatus("ISSUED");
-            issueReturnRepository.save(issueRequest);
-            return "Book issued successfully!";
+    @Transactional
+    public ResponseEntity<?> issueBook(@RequestBody IssueReturn issueRequest, HttpSession session) {
+        if (issueRequest.getBookId() == null) {
+            return ResponseEntity.badRequest().body("A book ID is required.");
         }
-        return "Book is unavailable!";
+        Long sessionUserId = currentUserId(session);
+        if (sessionUserId == null || !sessionUserId.equals(issueRequest.getUserId())) {
+            return unauthorized();
+        }
+
+        Optional<Book> bookOpt = bookRepository.findById(issueRequest.getBookId());
+        if (bookOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Book book = bookOpt.get();
+        if (book.getQuantity() <= 0) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("This book is currently unavailable.");
+        }
+
+        book.setQuantity(book.getQuantity() - 1);
+        book.setStatus(book.getQuantity() > 0 ? "AVAILABLE" : "UNAVAILABLE");
+        bookRepository.save(book);
+
+        issueRequest.setId(null);
+        issueRequest.setIssueDate(LocalDate.now().toString());
+        issueRequest.setReturnDate(null);
+        issueRequest.setStatus("ISSUED");
+        return ResponseEntity.status(HttpStatus.CREATED).body(issueReturnRepository.save(issueRequest));
     }
 
-    // 9. Return a Book
-    @PostMapping("/return")
-    public String returnBook(@RequestBody IssueReturn returnRequest) {
-        IssueReturn transaction = issueReturnRepository.findById(returnRequest.getId()).orElse(null);
-        if (transaction != null) {
-            transaction.setStatus("RETURNED");
-            issueReturnRepository.save(transaction);
-
-            Book book = bookRepository.findById(transaction.getBookId()).orElse(null);
-            if (book != null) {
-                book.setQuantity(book.getQuantity() + 1);
-                book.setStatus("AVAILABLE");
-                bookRepository.save(book);
-            }
-            return "Book returned successfully!";
+    @GetMapping("/issue/user/{userId}")
+    public ResponseEntity<?> getUserIssues(@PathVariable Long userId, HttpSession session) {
+        if (!userId.equals(currentUserId(session))) {
+            return unauthorized();
         }
-        return "Transaction not found!";
+        return ResponseEntity.ok(issueReturnRepository.findByUserId(userId));
+    }
+
+    @PostMapping("/return")
+    @Transactional
+    public ResponseEntity<?> returnBook(@RequestBody IssueReturn returnRequest, HttpSession session) {
+        Optional<IssueReturn> transactionOpt = issueReturnRepository.findById(returnRequest.getId());
+        if (transactionOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        IssueReturn transaction = transactionOpt.get();
+        Long sessionUserId = currentUserId(session);
+        if (sessionUserId == null || !Objects.equals(transaction.getUserId(), sessionUserId)) {
+            return unauthorized();
+        }
+        if (!"ISSUED".equals(transaction.getStatus())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("This book has already been returned.");
+        }
+
+        Optional<Book> bookOpt = bookRepository.findById(transaction.getBookId());
+        if (bookOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("The book record for this issue is missing.");
+        }
+
+        Book book = bookOpt.get();
+        book.setQuantity(book.getQuantity() + 1);
+        book.setStatus("AVAILABLE");
+        transaction.setStatus("RETURNED");
+        transaction.setReturnDate(LocalDate.now().toString());
+        bookRepository.save(book);
+        issueReturnRepository.save(transaction);
+        return ResponseEntity.ok(Map.of("message", "Book returned successfully."));
+    }
+
+    private boolean hasValidBookDetails(Book book) {
+        return book.getTitle() != null && !book.getTitle().isBlank()
+                && book.getAuthor() != null && !book.getAuthor().isBlank()
+                && book.getCategory() != null && !book.getCategory().isBlank()
+                && book.getQuantity() >= 0;
+    }
+
+    private Long currentUserId(HttpSession session) {
+        Object userId = session.getAttribute("userId");
+        return userId instanceof Long id ? id : null;
+    }
+
+    private boolean isAdmin(HttpSession session) {
+        return "ADMIN".equals(session.getAttribute("role"));
+    }
+
+    private ResponseEntity<String> unauthorized() {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You are not authorized to perform this action.");
     }
 }
