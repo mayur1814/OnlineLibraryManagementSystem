@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body onload="loadBooks(); loadStudentIssuedBooks();">
+<header>
+    <h1>Student Dashboard</h1>
+    <nav>
+        <a href="#" onclick="localStorage.clear(); window.location.href='login.html';">Logout</a>
+    </nav>
+</header>
+<div class="container">
+    <!-- Search & Available Books -->
+    <div class="card">
+        <h2>Available Books</h2>
+        <div class="form-group">
+            <input type="text" id="searchInput" placeholder="Search books by title or category..." onkeyup="loadBooks(this.value)">
+        </div>
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Category</th>
+                <th>Quantity</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody id="bookTableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- My Issued Books -->
+    <div class="card">
+        <h2>My Issued Books</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Transaction ID</th>
+                <th>Book Title</th>
+                <th>Issue Date</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody id="issuedTableBody"></tbody>
+        </table>
+    </div>
+</div>
+<script src="js/script.js"></script>
+</body>
+</html>

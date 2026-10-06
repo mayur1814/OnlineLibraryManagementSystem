@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body onload="loadAdminBooks()">
+<header>
+    <h1>Admin Dashboard</h1>
+    <nav>
+        <a href="#" onclick="localStorage.clear(); window.location.href='login.html';">Logout</a>
+    </nav>
+</header>
+<div class="container">
+    <!-- Add Book Form -->
+    <div class="card">
+        <h2>Add New Book</h2>
+        <form id="addBookForm" onsubmit="handleAddBook(event)">
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="bookTitle" required>
+            </div>
+            <div class="form-group">
+                <label>Author</label>
+                <input type="text" id="bookAuthor" required>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <input type="text" id="bookCategory" required>
+            </div>
+            <div class="form-group">
+                <label>Quantity</label>
+                <input type="number" id="bookQuantity" required>
+            </div>
+            <button type="submit">Add Book</button>
+        </form>
+    </div>
+
+    <!-- Manage Books Table -->
+    <div class="card">
+        <h2>Manage Library Books</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Quantity</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody id="adminBookTableBody"></tbody>
+        </table>
+    </div>
+</div>
+<script src="js/script.js"></script>
+<script>
+    async function handleAddBook(event) {
+        event.preventDefault();
+        const title = document.getElementById('bookTitle').value;
+        const author = document.getElementById('bookAuthor').value;
+        const category = document.getElementById('bookCategory').value;
+        const quantity = document.getElementById('bookQuantity').value;
+
+        const response = await fetch('/books', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, author, category, quantity, status: 'AVAILABLE' })
+        });
+
+        if (response.ok) {
+            alert("Book added successfully!");
+            document.getElementById('addBookForm').reset();
+            loadAdminBooks();
+        } else {
+            alert("Failed to add book.");
+        }
+    }
+</script>
+</body>
+</html>
