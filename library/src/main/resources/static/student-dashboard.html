@@ -2,56 +2,134 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Student Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard | Library Management System</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body onload="loadBooks(); loadStudentIssuedBooks();">
+<body onload="initStudentDashboard()">
 <header>
-    <h1>Student Dashboard</h1>
+    <a href="student-dashboard.html" class="brand">
+        <div class="brand-icon">🎓</div>
+        <div class="brand-text">
+            <h1>Student Portal</h1>
+            <span>Online Library Management</span>
+        </div>
+    </a>
     <nav>
-        <a href="#" onclick="logout(); return false;">Logout</a>
+        <div class="nav-user">
+            <span class="user-badge" id="studentName">Student</span>
+            <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+        </div>
     </nav>
 </header>
+
 <div class="container">
-    <!-- Search & Available Books -->
-    <div class="card">
-        <h2>Available Books</h2>
-        <div class="form-group">
-            <input type="text" id="searchInput" placeholder="Search books by title or category..." onkeyup="loadBooks(this.value)">
+    <!-- Welcome Greeting & Quick Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon emerald">📚</div>
+            <div class="stat-info">
+                <div class="stat-number" id="statTotalBooks">--</div>
+                <div class="stat-label">Catalog Titles</div>
+            </div>
         </div>
-        <table>
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Author</th>
-                <th>Category</th>
-                <th>Quantity</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-            </thead>
-            <tbody id="bookTableBody"></tbody>
-        </table>
+        <div class="stat-card">
+            <div class="stat-icon sky">✅</div>
+            <div class="stat-info">
+                <div class="stat-number" id="statAvailBooks">--</div>
+                <div class="stat-label">Available to Borrow</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon amber">⏳</div>
+            <div class="stat-info">
+                <div class="stat-number" id="myActiveIssuesCount">0</div>
+                <div class="stat-label">My Active Loans</div>
+            </div>
+        </div>
     </div>
 
-    <!-- My Issued Books -->
-    <div class="card">
-        <h2>My Issued Books</h2>
-        <table>
-            <thead>
-            <tr>
-                <th>Transaction ID</th>
-                <th>Book Title</th>
-                <th>Issue Date</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-            </thead>
-            <tbody id="issuedTableBody"></tbody>
-        </table>
+    <!-- Tab Navigation -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tabExplore', this)">🔍 Search & Issue Books</button>
+        <button class="tab-btn" onclick="switchTab('tabMyLoans', this)">📖 My Issued Books</button>
+    </div>
+
+    <!-- TAB 1: Search & Issue Books -->
+    <div id="tabExplore" class="tab-pane active">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">Library Book Catalog</h3>
+                    <p style="color:var(--text-secondary);font-size:0.875rem;">Browse or search books by title, author, or category.</p>
+                </div>
+            </div>
+
+            <div class="search-bar">
+                <input type="text" id="studentSearch" class="form-control" placeholder="Search by title, author, or category..." onkeyup="filterStudentBooks()">
+                <select id="categoryFilter" class="form-control" onchange="filterStudentBooks()">
+                    <option value="">All Categories</option>
+                </select>
+                <div style="display:flex;align-items:center;gap:0.5rem;padding:0 0.5rem;">
+                    <input type="checkbox" id="availFilter" onchange="filterStudentBooks()" style="width:18px;height:18px;cursor:pointer;">
+                    <label for="availFilter" style="font-size:0.85rem;font-weight:600;cursor:pointer;margin-bottom:0;">In Stock Only</label>
+                </div>
+                <button class="btn btn-secondary" onclick="document.getElementById('studentSearch').value='';document.getElementById('availFilter').checked=false;filterStudentBooks();">Clear</button>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Book Title</th>
+                        <th>Author</th>
+                        <th>Category</th>
+                        <th>Copies</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody id="studentBookTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: My Issued Books -->
+    <div id="tabMyLoans" class="tab-pane">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">My Loan History & Active Issues</h3>
+                    <p style="color:var(--text-secondary);font-size:0.875rem;">Track books you have currently issued or returned.</p>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="loadStudentIssuedRecords()">↻ Refresh History</button>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Tx ID</th>
+                        <th>Book Details</th>
+                        <th>Category</th>
+                        <th>Issue Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody id="studentIssuedTableBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
+
+<footer>
+    <p>© 2026 Online Library Management System — Student Portal</p>
+</footer>
+
 <script src="js/script.js"></script>
 </body>
 </html>

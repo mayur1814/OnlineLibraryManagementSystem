@@ -2,25 +2,139 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Online Library Management System - Home</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Library Management System | Academic Portal</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body onload="loadPublicCatalog()">
 <header>
-    <h1>Library Management System</h1>
+    <a href="index.html" class="brand">
+        <div class="brand-icon">📚</div>
+        <div class="brand-text">
+            <h1> SHREE LIBRARY </h1>
+            <span>Students Academic Portal</span>
+        </div>
+    </a>
     <nav>
-        <a href="index.html">Home</a>
+        <a href="index.html" class="active">Home</a>
         <a href="login.html">Login</a>
-        <a href="register.html">Register</a>
+        <a href="register.html">Student Register</a>
     </nav>
 </header>
+
 <div class="container">
-    <div class="card" style="text-align: center;">
-        <h2>Welcome to the Online Library</h2>
-        <p>Explore a vast collection of books, easily search by category, and manage your academic readings efficiently.</p>
-        <br>
-        <a href="login.html"><button>Get Started</button></a>
+    <!-- Hero Banner -->
+    <div class="hero">
+        <span class="hero-badge">Enterprise Library Solution</span>
+        <h2>Explore, Issue & Manage Books Instantly</h2>
+        <p> Search academic books, manage loan records, and track transactions with ease.</p>
+        <div class="hero-actions">
+            <a href="login.html" class="btn btn-primary" style="padding:0.75rem 1.75rem;font-size:1rem;">Student & Admin Login</a>
+            <a href="register.html" class="btn btn-secondary" style="padding:0.75rem 1.75rem;font-size:1rem;">New Student Registration</a>
+        </div>
+    </div>
+
+    <!-- KPI Metric Highlights -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon indigo">📖</div>
+            <div class="stat-info">
+                <div class="stat-number" id="statTotalBooks">12</div>
+                <div class="stat-label">Catalog Titles</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon emerald">📦</div>
+            <div class="stat-info">
+                <div class="stat-number" id="statTotalCopies">40+</div>
+                <div class="stat-label">Physical Copies</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon sky">👥</div>
+            <div class="stat-info">
+                <div class="stat-number" id="statTotalStudents">10+</div>
+                <div class="stat-label">Active Readers</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon amber">⚡</div>
+            <div class="stat-info">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">Digital Access</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Overview -->
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3>Smart Book Search</h3>
+            <p>Filter books by title, author, or academic category in real-time with instant availability status.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📑</div>
+            <h3>1-Click Book Issue</h3>
+            <p>Students can reserve and issue available books instantly with automatic inventory deduction.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🛡️</div>
+            <h3>Admin Management</h3>
+            <p>Comprehensive administrative tools to add, edit, delete books, view students, and track all return records.</p>
+        </div>
+    </div>
+
+    <!-- Public Book Catalog Preview -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">Library Book Catalog</h3>
+                <p style="color:var(--text-secondary);font-size:0.875rem;">Browse currently cataloged titles. Log in to issue books.</p>
+            </div>
+            <div>
+                <a href="login.html" class="btn btn-primary btn-sm">Sign in to Issue Books →</a>
+            </div>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" id="catalogSearch" class="form-control" placeholder="Search books by title, author, or category..." onkeyup="filterPublicCatalog()">
+            <select id="catalogCategory" class="form-control" onchange="filterPublicCatalog()">
+                <option value="">All Categories</option>
+                <option value="Software Engineering">Software Engineering</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Programming">Programming</option>
+                <option value="Web Development">Web Development</option>
+                <option value="Database Systems">Database Systems</option>
+                <option value="AI & Machine Learning">AI & Machine Learning</option>
+                <option value="Mathematics">Mathematics</option>
+            </select>
+            <button class="btn btn-secondary" onclick="document.getElementById('catalogSearch').value='';document.getElementById('catalogCategory').value='';filterPublicCatalog();">Reset</button>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Book Title</th>
+                    <th>Author</th>
+                    <th>Category</th>
+                    <th>Copies</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody id="publicBooksTbody"></tbody>
+            </table>
+        </div>
     </div>
 </div>
+
+<footer>
+    <p>© 2026 Online Library Management System </p>
+    <p style="margin-top:0.3rem;"></p>
+</footer>
+
+<script src="js/script.js"></script>
 </body>
 </html>

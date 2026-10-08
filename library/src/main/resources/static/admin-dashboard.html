@@ -2,58 +2,255 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Online Library Management System</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body onload="loadAdminBooks()">
+<body onload="initAdminDashboard()">
 <header>
-    <h1>Admin Dashboard</h1>
+    <a href="admin-dashboard.html" class="brand">
+        <div class="brand-icon">⚙️</div>
+        <div class="brand-text">
+            <h1>Admin Control Center</h1>
+            <span>Online Library Management System</span>
+        </div>
+    </a>
     <nav>
-        <a href="#" onclick="logout(); return false;">Logout</a>
+        <div class="nav-user">
+            <span class="user-badge" style="background:rgba(239,68,68,0.2);color:#fca5a5;" id="adminName">Administrator</span>
+            <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+        </div>
     </nav>
 </header>
+
 <div class="container">
-    <!-- Add Book Form -->
-    <div class="card">
-        <h2>Add New Book</h2>
-        <form id="addBookForm" onsubmit="handleAddBook(event)">
-            <div class="form-group">
-                <label>Title</label>
-                <input type="text" id="bookTitle" required>
+    <!-- Admin KPI Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon indigo">📚</div>
+            <div class="stat-info">
+                <div class="stat-number" id="statAdminBooks">--</div>
+                <div class="stat-label">Total Titles</div>
             </div>
-            <div class="form-group">
-                <label>Author</label>
-                <input type="text" id="bookAuthor" required>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon emerald">📦</div>
+            <div class="stat-info">
+                <div class="stat-number" id="statAdminCopies">--</div>
+                <div class="stat-label">Total Copies</div>
             </div>
-            <div class="form-group">
-                <label>Category</label>
-                <input type="text" id="bookCategory" required>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon amber">⏳</div>
+            <div class="stat-info">
+                <div class="stat-number" id="statAdminIssued">--</div>
+                <div class="stat-label">Currently Issued</div>
             </div>
-            <div class="form-group">
-                <label>Quantity</label>
-                <input type="number" id="bookQuantity" min="0" required>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon sky">👥</div>
+            <div class="stat-info">
+                <div class="stat-number" id="statAdminStudents">--</div>
+                <div class="stat-label">Registered Students</div>
             </div>
-            <button type="submit">Add Book</button>
-        </form>
+        </div>
     </div>
 
-    <!-- Manage Books Table -->
-    <div class="card">
-        <h2>Manage Library Books</h2>
-        <table>
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Author</th>
-                <th>Quantity</th>
-                <th>Action</th>
-            </tr>
-            </thead>
-            <tbody id="adminBookTableBody"></tbody>
-        </table>
+    <!-- Admin Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tabBooks', this)">📚 Manage Books</button>
+        <button class="tab-btn" onclick="switchTab('tabStudents', this)">👥 Student Records</button>
+        <button class="tab-btn" onclick="switchTab('tabTransactions', this)">📑 Issue & Return History</button>
+    </div>
+
+    <!-- TAB 1: Manage Books -->
+    <div id="tabBooks" class="tab-pane active">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">Book Inventory Management</h3>
+                    <p style="color:var(--text-secondary);font-size:0.875rem;">Add new books, update existing catalog entries, and manage stock.</p>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="openModal('addBookModal')">+ Add New Book</button>
+            </div>
+
+            <div class="search-bar">
+                <input type="text" id="adminBookSearch" class="form-control" placeholder="Search books by title, author, or category..." onkeyup="filterAdminBooks()">
+                <select id="adminCategoryFilter" class="form-control" onchange="filterAdminBooks()">
+                    <option value="">All Categories</option>
+                </select>
+                <button class="btn btn-secondary" onclick="document.getElementById('adminBookSearch').value='';filterAdminBooks();">Reset</button>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Category</th>
+                        <th>Copies</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody id="adminBookTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: Student Records -->
+    <div id="tabStudents" class="tab-pane">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">Registered Students</h3>
+                    <p style="color:var(--text-secondary);font-size:0.875rem;">View registered student accounts and active book loan status.</p>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="loadAdminStudents()">↻ Refresh Students</button>
+            </div>
+
+            <div class="search-bar">
+                <input type="text" id="adminStudentSearch" class="form-control" placeholder="Search students by name, email, or mobile..." onkeyup="filterAdminStudents()">
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Full Name</th>
+                        <th>Email Address</th>
+                        <th>Mobile</th>
+                        <th>Role</th>
+                        <th>Loan Activity</th>
+                    </tr>
+                    </thead>
+                    <tbody id="adminStudentsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: Issue & Return Transactions -->
+    <div id="tabTransactions" class="tab-pane">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">All Issue & Return Transactions</h3>
+                    <p style="color:var(--text-secondary);font-size:0.875rem;">Comprehensive log of all book borrow and return events across the library.</p>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="loadAdminTransactions()">↻ Refresh Transactions</button>
+            </div>
+
+            <div class="search-bar">
+                <input type="text" id="transactionSearch" class="form-control" placeholder="Search by student name, email, or book title..." onkeyup="filterAdminTransactions()">
+                <select id="transactionStatusFilter" class="form-control" onchange="filterAdminTransactions()">
+                    <option value="">All Statuses</option>
+                    <option value="ISSUED">Currently Issued</option>
+                    <option value="RETURNED">Returned</option>
+                </select>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Tx ID</th>
+                        <th>Student</th>
+                        <th>Book</th>
+                        <th>Category</th>
+                        <th>Issue Date</th>
+                        <th>Return Date</th>
+                        <th>Status</th>
+                    </tr>
+                    </thead>
+                    <tbody id="adminTransactionsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- ========================================================
+     MODALS: ADD & EDIT BOOK
+     ======================================================== -->
+
+<!-- Modal: Add Book -->
+<div id="addBookModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Add New Book to Inventory</h3>
+            <button class="modal-close" onclick="closeModal('addBookModal')">✕</button>
+        </div>
+        <form id="addBookForm" onsubmit="handleAddBook(event)">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="addTitle">Book Title</label>
+                    <input type="text" id="addTitle" class="form-control" placeholder="e.g., Clean Architecture" required>
+                </div>
+                <div class="form-group">
+                    <label for="addAuthor">Author</label>
+                    <input type="text" id="addAuthor" class="form-control" placeholder="e.g., Robert C. Martin" required>
+                </div>
+                <div class="form-group">
+                    <label for="addCategory">Category</label>
+                    <input type="text" id="addCategory" class="form-control" placeholder="e.g., Software Engineering" required>
+                </div>
+                <div class="form-group">
+                    <label for="addQuantity">Quantity (Copies)</label>
+                    <input type="number" id="addQuantity" class="form-control" min="0" value="1" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addBookModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Book</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Edit Book -->
+<div id="editBookModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Update Book Details</h3>
+            <button class="modal-close" onclick="closeModal('editBookModal')">✕</button>
+        </div>
+        <form id="editBookForm" onsubmit="handleUpdateBook(event)">
+            <input type="hidden" id="editBookId">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editTitle">Book Title</label>
+                    <input type="text" id="editTitle" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="editAuthor">Author</label>
+                    <input type="text" id="editAuthor" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCategory">Category</label>
+                    <input type="text" id="editCategory" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="editQuantity">Quantity (Copies)</label>
+                    <input type="number" id="editQuantity" class="form-control" min="0" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editBookModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<footer>
+    <p>© 2026 Online Library Management System — Admin Portal</p>
+</footer>
+
 <script src="js/script.js"></script>
 </body>
 </html>

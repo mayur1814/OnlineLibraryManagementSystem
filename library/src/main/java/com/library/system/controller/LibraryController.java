@@ -1,250 +1,273 @@
 package com.library.system.controller;
 
+import com.library.system.dto.DashboardStatsDto;
+import com.library.system.dto.IssueDetailDto;
+import com.library.system.dto.UserResponseDto;
 import com.library.system.model.Book;
 import com.library.system.model.IssueReturn;
 import com.library.system.model.User;
-import com.library.system.repository.BookRepository;
-import com.library.system.repository.IssueReturnRepository;
-import com.library.system.repository.UserRepository;
+import com.library.system.service.BookService;
+import com.library.system.service.IssueReturnService;
+import com.library.system.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 public class LibraryController {
-    private final UserRepository userRepository;
-    private final BookRepository bookRepository;
-    private final IssueReturnRepository issueReturnRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final UserService userService;
+    private final BookService bookService;
+    private final IssueReturnService issueReturnService;
 
-    public LibraryController(
-            UserRepository userRepository,
-            BookRepository bookRepository,
-            IssueReturnRepository issueReturnRepository,
-            PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.bookRepository = bookRepository;
-        this.issueReturnRepository = issueReturnRepository;
-        this.passwordEncoder = passwordEncoder;
+    public LibraryController(UserService userService,
+                             BookService bookService,
+                             IssueReturnService issueReturnService) {
+        this.userService = userService;
+        this.bookService = bookService;
+        this.issueReturnService = issueReturnService;
     }
 
+    // -------------------------------------------------------------
+    // Authentication Endpoints
+    // -------------------------------------------------------------
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
-        if (user.getName() == null || user.getName().isBlank()
-                || user.getEmail() == null || user.getEmail().isBlank()
-                || user.getPassword() == null || user.getPassword().isBlank()) {
-            return ResponseEntity.badRequest().body("Name, email, and password are required.");
+        try {
+            User registered = userService.registerStudent(user);
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                    "success", true,
+                    "message", "Registration successful. You can now log in.",
+                    "userId", registered.getId()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("An account with this email already exists.");
-        }
-
-        user.setRole("STUDENT");
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userRepository.save(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "Registration successful."));
     }
 
     @PostMapping("/login")
-    @Transactional
-    public ResponseEntity<?> loginUser(
-            @RequestBody User loginData, HttpServletRequest request, HttpSession session) {
-        if (loginData.getEmail() == null || loginData.getPassword() == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password.");
-        }
-        Optional<User> userOpt = userRepository.findByEmail(loginData.getEmail());
-        if (userOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password.");
-        }
+    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginData,
+                                       HttpServletRequest request,
+                                       HttpSession session) {
+        try {
+            String email = loginData.get("email");
+            String password = loginData.get("password");
 
-        User user = userOpt.get();
-        String storedPassword = user.getPassword();
-        boolean encodedPassword = storedPassword != null && storedPassword.startsWith("$2");
-        boolean passwordMatches = encodedPassword
-                ? passwordEncoder.matches(loginData.getPassword(), storedPassword)
-                : loginData.getPassword().equals(storedPassword);
-        if (!passwordMatches) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password.");
-        }
-        if (!encodedPassword) {
-            user.setPassword(passwordEncoder.encode(loginData.getPassword()));
-            userRepository.save(user);
-        }
+            User user = userService.authenticateUser(email, password);
 
-        String role = user.getRole() == null ? "STUDENT" : user.getRole();
-        request.changeSessionId();
-        session.setAttribute("userId", user.getId());
-        session.setAttribute("role", role);
+            // Establish secure session
+            request.changeSessionId();
+            session.setAttribute("userId", user.getId());
+            session.setAttribute("role", user.getRole());
+            session.setAttribute("userName", user.getName());
+            session.setAttribute("email", user.getEmail());
+
+            return ResponseEntity.ok(Map.of(
+                    "id", user.getId(),
+                    "name", user.getName(),
+                    "email", user.getEmail(),
+                    "role", user.getRole(),
+                    "message", "Login successful."
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    @GetMapping("/auth/me")
+    public ResponseEntity<?> getCurrentAuthUser(HttpSession session) {
+        Long userId = getSessionUserId(session);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("authenticated", false));
+        }
         return ResponseEntity.ok(Map.of(
-                "id", user.getId(),
-                "name", user.getName(),
-                "email", user.getEmail(),
-                "role", role));
+                "authenticated", true,
+                "id", userId,
+                "name", session.getAttribute("userName"),
+                "email", session.getAttribute("email"),
+                "role", session.getAttribute("role")
+        ));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpSession session) {
+    public ResponseEntity<?> logout(HttpSession session) {
         session.invalidate();
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully."));
     }
 
+    // -------------------------------------------------------------
+    // Books Endpoints (Section 12 specification)
+    // -------------------------------------------------------------
     @GetMapping("/books")
-    public List<Book> getAllBooks() {
-        return bookRepository.findAll();
+    public List<Book> getAllBooks(@RequestParam(value = "search", required = false) String search) {
+        if (search != null && !search.isBlank()) {
+            return bookService.searchBooks(search);
+        }
+        return bookService.getAllBooks();
     }
 
     @GetMapping("/books/{id}")
     public ResponseEntity<?> getBookById(@PathVariable Long id) {
-        return bookRepository.findById(id)
+        return bookService.getBookById(id)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("message", "Book not found with ID: " + id)));
     }
 
     @PostMapping("/books")
     public ResponseEntity<?> addBook(@RequestBody Book book, HttpSession session) {
         if (!isAdmin(session)) {
-            return unauthorized();
+            return forbiddenResponse();
         }
-        if (!hasValidBookDetails(book)) {
-            return ResponseEntity.badRequest().body("Title, author, category, and a non-negative quantity are required.");
+        try {
+            Book created = bookService.addBook(book);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
-        book.setId(null);
-        book.setStatus(book.getQuantity() > 0 ? "AVAILABLE" : "UNAVAILABLE");
-        return ResponseEntity.status(HttpStatus.CREATED).body(bookRepository.save(book));
     }
 
     @PutMapping("/books/{id}")
-    public ResponseEntity<?> updateBook(@PathVariable Long id, @RequestBody Book details, HttpSession session) {
+    public ResponseEntity<?> updateBook(@PathVariable Long id, @RequestBody Book book, HttpSession session) {
         if (!isAdmin(session)) {
-            return unauthorized();
+            return forbiddenResponse();
         }
-        if (!hasValidBookDetails(details)) {
-            return ResponseEntity.badRequest().body("Title, author, category, and a non-negative quantity are required.");
+        try {
+            Book updated = bookService.updateBook(id, book);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
-        Optional<Book> existing = bookRepository.findById(id);
-        if (existing.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Book book = existing.get();
-        book.setTitle(details.getTitle());
-        book.setAuthor(details.getAuthor());
-        book.setCategory(details.getCategory());
-        book.setQuantity(details.getQuantity());
-        book.setStatus(details.getQuantity() > 0 ? "AVAILABLE" : "UNAVAILABLE");
-        return ResponseEntity.ok(bookRepository.save(book));
     }
 
     @DeleteMapping("/books/{id}")
     public ResponseEntity<?> deleteBook(@PathVariable Long id, HttpSession session) {
         if (!isAdmin(session)) {
-            return unauthorized();
+            return forbiddenResponse();
         }
-        if (!bookRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+        try {
+            bookService.deleteBook(id);
+            return ResponseEntity.ok(Map.of("message", "Book deleted successfully."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
         }
-        bookRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
     }
 
+    // -------------------------------------------------------------
+    // Issue & Return Endpoints (Section 12 specification)
+    // -------------------------------------------------------------
     @PostMapping("/issue")
-    @Transactional
-    public ResponseEntity<?> issueBook(@RequestBody IssueReturn issueRequest, HttpSession session) {
-        if (issueRequest.getBookId() == null) {
-            return ResponseEntity.badRequest().body("A book ID is required.");
-        }
-        Long sessionUserId = currentUserId(session);
-        if (sessionUserId == null || !sessionUserId.equals(issueRequest.getUserId())) {
-            return unauthorized();
+    public ResponseEntity<?> issueBook(@RequestBody Map<String, Object> payload, HttpSession session) {
+        Long sessionUserId = getSessionUserId(session);
+        Long requestedUserId = payload.get("userId") != null ? Long.valueOf(payload.get("userId").toString()) : sessionUserId;
+        Long bookId = payload.get("bookId") != null ? Long.valueOf(payload.get("bookId").toString()) : null;
+
+        if (requestedUserId == null || bookId == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "User ID and Book ID are required."));
         }
 
-        Optional<Book> bookOpt = bookRepository.findById(issueRequest.getBookId());
-        if (bookOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        Book book = bookOpt.get();
-        if (book.getQuantity() <= 0) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("This book is currently unavailable.");
+        // Only allow student to issue for themselves unless admin
+        if (!isAdmin(session) && (sessionUserId == null || !sessionUserId.equals(requestedUserId))) {
+            return forbiddenResponse();
         }
 
-        book.setQuantity(book.getQuantity() - 1);
-        book.setStatus(book.getQuantity() > 0 ? "AVAILABLE" : "UNAVAILABLE");
-        bookRepository.save(book);
+        try {
+            IssueReturn record = issueReturnService.issueBook(requestedUserId, bookId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                    "success", true,
+                    "message", "Book issued successfully.",
+                    "transaction", record
+            ));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        }
+    }
 
-        issueRequest.setId(null);
-        issueRequest.setIssueDate(LocalDate.now().toString());
-        issueRequest.setReturnDate(null);
-        issueRequest.setStatus("ISSUED");
-        return ResponseEntity.status(HttpStatus.CREATED).body(issueReturnRepository.save(issueRequest));
+    @PostMapping("/return")
+    public ResponseEntity<?> returnBook(@RequestBody Map<String, Object> payload, HttpSession session) {
+        Long issueId = payload.get("id") != null ? Long.valueOf(payload.get("id").toString()) : null;
+        if (issueId == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Transaction ID is required."));
+        }
+
+        Long sessionUserId = getSessionUserId(session);
+        boolean admin = isAdmin(session);
+
+        try {
+            IssueReturn returned = issueReturnService.returnBook(issueId, sessionUserId, admin);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Book returned successfully.",
+                    "transaction", returned
+            ));
+        } catch (SecurityException e) {
+            return forbiddenResponse();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     @GetMapping("/issue/user/{userId}")
     public ResponseEntity<?> getUserIssues(@PathVariable Long userId, HttpSession session) {
-        if (!userId.equals(currentUserId(session))) {
-            return unauthorized();
+        Long sessionUserId = getSessionUserId(session);
+        if (!isAdmin(session) && (sessionUserId == null || !sessionUserId.equals(userId))) {
+            return forbiddenResponse();
         }
-        return ResponseEntity.ok(issueReturnRepository.findByUserId(userId));
+        List<IssueDetailDto> list = issueReturnService.getStudentIssues(userId);
+        return ResponseEntity.ok(list);
     }
 
-    @PostMapping("/return")
-    @Transactional
-    public ResponseEntity<?> returnBook(@RequestBody IssueReturn returnRequest, HttpSession session) {
-        Optional<IssueReturn> transactionOpt = issueReturnRepository.findById(returnRequest.getId());
-        if (transactionOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
+    // -------------------------------------------------------------
+    // Admin Management Endpoints
+    // -------------------------------------------------------------
+    @GetMapping("/users")
+    public ResponseEntity<?> getAllStudents(HttpSession session) {
+        if (!isAdmin(session)) {
+            return forbiddenResponse();
         }
-
-        IssueReturn transaction = transactionOpt.get();
-        Long sessionUserId = currentUserId(session);
-        if (sessionUserId == null || !Objects.equals(transaction.getUserId(), sessionUserId)) {
-            return unauthorized();
-        }
-        if (!"ISSUED".equals(transaction.getStatus())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("This book has already been returned.");
-        }
-
-        Optional<Book> bookOpt = bookRepository.findById(transaction.getBookId());
-        if (bookOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("The book record for this issue is missing.");
-        }
-
-        Book book = bookOpt.get();
-        book.setQuantity(book.getQuantity() + 1);
-        book.setStatus("AVAILABLE");
-        transaction.setStatus("RETURNED");
-        transaction.setReturnDate(LocalDate.now().toString());
-        bookRepository.save(book);
-        issueReturnRepository.save(transaction);
-        return ResponseEntity.ok(Map.of("message", "Book returned successfully."));
+        List<UserResponseDto> students = userService.getAllStudents();
+        return ResponseEntity.ok(students);
     }
 
-    private boolean hasValidBookDetails(Book book) {
-        return book.getTitle() != null && !book.getTitle().isBlank()
-                && book.getAuthor() != null && !book.getAuthor().isBlank()
-                && book.getCategory() != null && !book.getCategory().isBlank()
-                && book.getQuantity() >= 0;
+    @GetMapping("/issues")
+    public ResponseEntity<?> getAllIssues(HttpSession session) {
+        if (!isAdmin(session)) {
+            return forbiddenResponse();
+        }
+        List<IssueDetailDto> transactions = issueReturnService.getAllTransactions();
+        return ResponseEntity.ok(transactions);
     }
 
-    private Long currentUserId(HttpSession session) {
-        Object userId = session.getAttribute("userId");
-        return userId instanceof Long id ? id : null;
+    @GetMapping("/stats")
+    public ResponseEntity<DashboardStatsDto> getDashboardStats() {
+        return ResponseEntity.ok(issueReturnService.getDashboardStats());
+    }
+
+    // -------------------------------------------------------------
+    // Helper Methods
+    // -------------------------------------------------------------
+    private Long getSessionUserId(HttpSession session) {
+        Object id = session.getAttribute("userId");
+        if (id instanceof Long l) return l;
+        if (id instanceof Integer i) return i.longValue();
+        return null;
     }
 
     private boolean isAdmin(HttpSession session) {
-        return "ADMIN".equals(session.getAttribute("role"));
+        return "ADMIN".equalsIgnoreCase((String) session.getAttribute("role"));
     }
 
-    private ResponseEntity<String> unauthorized() {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You are not authorized to perform this action.");
+    private ResponseEntity<?> forbiddenResponse() {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "success", false,
+                "message", "Access denied. Administrator privileges required."
+        ));
     }
 }
