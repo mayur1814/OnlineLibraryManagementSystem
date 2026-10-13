@@ -40,6 +40,21 @@ public class BookService {
         book.setTitle(book.getTitle().trim());
         book.setAuthor(book.getAuthor().trim());
         book.setCategory(book.getCategory().trim());
+        if (book.getTotalCopies() == null || book.getTotalCopies() <= 0) {
+            book.setTotalCopies(book.getQuantity());
+        }
+        if (book.getQuantity() > book.getTotalCopies()) {
+            book.setTotalCopies(book.getQuantity());
+        }
+        if (book.getIsbn() != null) {
+            book.setIsbn(book.getIsbn().trim());
+        }
+        if (book.getImageUrl() != null) {
+            book.setImageUrl(book.getImageUrl().trim());
+        }
+        if (book.getDescription() != null) {
+            book.setDescription(book.getDescription().trim());
+        }
         book.setStatus(book.getQuantity() > 0 ? "AVAILABLE" : "UNAVAILABLE");
         return bookRepository.save(book);
     }
@@ -54,6 +69,20 @@ public class BookService {
         existing.setAuthor(details.getAuthor().trim());
         existing.setCategory(details.getCategory().trim());
         existing.setQuantity(details.getQuantity());
+        if (details.getTotalCopies() != null && details.getTotalCopies() >= details.getQuantity()) {
+            existing.setTotalCopies(details.getTotalCopies());
+        } else if (existing.getTotalCopies() == null || existing.getTotalCopies() < details.getQuantity()) {
+            existing.setTotalCopies(details.getQuantity());
+        }
+        if (details.getIsbn() != null) {
+            existing.setIsbn(details.getIsbn().trim());
+        }
+        if (details.getImageUrl() != null) {
+            existing.setImageUrl(details.getImageUrl().trim());
+        }
+        if (details.getDescription() != null) {
+            existing.setDescription(details.getDescription().trim());
+        }
         existing.setStatus(details.getQuantity() > 0 ? "AVAILABLE" : "UNAVAILABLE");
 
         return bookRepository.save(existing);

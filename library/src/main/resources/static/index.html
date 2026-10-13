@@ -116,16 +116,33 @@
             <table>
                 <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Book Title</th>
-                    <th>Author</th>
+                    <th style="width:70px;">Cover</th>
+                    <th>Book Details</th>
+                    <th>Book ID</th>
                     <th>Category</th>
                     <th>Copies</th>
                     <th>Status</th>
+                    <th>Action</th>
                 </tr>
                 </thead>
                 <tbody id="publicBooksTbody"></tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Universal Book Details -->
+<div id="bookDetailsModal" class="modal-overlay book-details-modal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 id="bookDetailsHeader">Book Catalog Details</h3>
+            <button class="modal-close" onclick="closeModal('bookDetailsModal')">✕</button>
+        </div>
+        <div class="modal-body" id="bookDetailsBody">
+            <!-- Populated dynamically via JS -->
+        </div>
+        <div class="modal-footer" id="bookDetailsFooter">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('bookDetailsModal')">Close</button>
         </div>
     </div>
 </div>

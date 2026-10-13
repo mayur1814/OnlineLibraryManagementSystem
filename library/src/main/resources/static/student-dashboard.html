@@ -81,9 +81,9 @@
                 <table>
                     <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Book Title</th>
-                        <th>Author</th>
+                        <th style="width:70px;">Cover</th>
+                        <th>Book Details</th>
+                        <th>Book ID</th>
                         <th>Category</th>
                         <th>Copies</th>
                         <th>Status</th>
@@ -111,10 +111,12 @@
                 <table>
                     <thead>
                     <tr>
+                        <th style="width:70px;">Cover</th>
                         <th>Tx ID</th>
                         <th>Book Details</th>
                         <th>Category</th>
                         <th>Issue Date</th>
+                        <th>Due Date</th>
                         <th>Status</th>
                         <th>Action</th>
                     </tr>
@@ -122,6 +124,56 @@
                     <tbody id="studentIssuedTableBody"></tbody>
                 </table>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Universal Book Details -->
+<div id="bookDetailsModal" class="modal-overlay book-details-modal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 id="bookDetailsHeader">Book Details</h3>
+            <button class="modal-close" onclick="closeModal('bookDetailsModal')">✕</button>
+        </div>
+        <div class="modal-body" id="bookDetailsBody">
+            <!-- Dynamic Content -->
+        </div>
+        <div class="modal-footer" id="bookDetailsFooter">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('bookDetailsModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirm Issue Book -->
+<div id="issueBookModal" class="modal-overlay">
+    <div class="modal-box" style="max-width:540px;">
+        <div class="modal-header">
+            <h3>Issue Book Confirmation</h3>
+            <button class="modal-close" onclick="closeModal('issueBookModal')">✕</button>
+        </div>
+        <div class="modal-body" id="issueModalBody">
+            <!-- Populated dynamically with cover image, title, author, status -->
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('issueBookModal')">Cancel</button>
+            <button type="button" class="btn btn-primary" id="confirmIssueBtn" onclick="confirmIssueBookAction()">Confirm & Issue Book</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirm Return Book -->
+<div id="returnBookModal" class="modal-overlay">
+    <div class="modal-box" style="max-width:540px;">
+        <div class="modal-header">
+            <h3>Return Book Confirmation</h3>
+            <button class="modal-close" onclick="closeModal('returnBookModal')">✕</button>
+        </div>
+        <div class="modal-body" id="returnModalBody">
+            <!-- Populated dynamically with cover image, title, author, issue date, due date, status -->
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('returnBookModal')">Cancel</button>
+            <button type="button" class="btn btn-success" id="confirmReturnBtn" onclick="confirmReturnBookAction()">Confirm & Return Book</button>
         </div>
     </div>
 </div>

@@ -19,7 +19,10 @@ public class IssueDetailDto {
     private String bookTitle;
     private String bookAuthor;
     private String bookCategory;
+    private String bookImageUrl;
+    private String bookIsbn;
     private String issueDate;
+    private String dueDate;
     private String returnDate;
     private String status;
 }

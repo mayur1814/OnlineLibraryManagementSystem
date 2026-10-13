@@ -770,6 +770,278 @@ footer a {
     text-decoration: none;
 }
 
+/* ---------------- Book Cover Image Styling & Details ---------------- */
+.book-cover-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.book-thumb-wrapper {
+    position: relative;
+    width: 52px;
+    height: 72px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+    background: #1e293b;
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+}
+
+.book-thumb-wrapper:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.22);
+}
+
+.book-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.book-info-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.book-title-link {
+    font-weight: 700;
+    color: var(--text-primary);
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.3;
+    transition: color 0.15s ease;
+}
+
+.book-title-link:hover {
+    color: var(--primary);
+}
+
+.book-author-text {
+    font-size: 0.825rem;
+    color: var(--text-secondary);
+}
+
+.book-isbn-tag {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: monospace;
+}
+
+/* ---------------- Book Details Modal ---------------- */
+.book-details-modal .modal-box {
+    max-width: 720px;
+    width: 95%;
+}
+
+.book-details-layout {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.book-details-cover-container {
+    flex-shrink: 0;
+    width: 220px;
+    position: relative;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: 0 14px 28px rgba(0,0,0,0.22), 0 10px 10px rgba(0,0,0,0.18);
+    background: #0f172a;
+}
+
+.book-details-cover-img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 240 / 340;
+    object-fit: cover;
+    display: block;
+}
+
+.book-details-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.book-details-title {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.25;
+}
+
+.book-details-author {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.book-details-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.9rem;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.meta-item-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.meta-item-value {
+    font-size: 0.925rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-top: 0.15rem;
+}
+
+.book-stock-meter {
+    background: #e2e8f0;
+    border-radius: var(--radius-full);
+    height: 8px;
+    overflow: hidden;
+    margin-top: 0.35rem;
+}
+
+.book-stock-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #06b6d4);
+    border-radius: var(--radius-full);
+    transition: width 0.3s ease;
+}
+
+.book-details-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    background: #ffffff;
+    border-left: 3px solid var(--primary);
+    padding: 0.6rem 0.9rem;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* ---------------- Issue & Return Confirmation Cards ---------------- */
+.action-confirm-box {
+    display: flex;
+    gap: 1.25rem;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.action-confirm-cover {
+    width: 90px;
+    height: 125px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+    background: #1e293b;
+}
+
+.action-confirm-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.action-confirm-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.action-confirm-info h4 {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+
+.action-confirm-info p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.due-date-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-full);
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.due-date-pill.overdue {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+
+.due-date-pill.ok {
+    background: #dcfce7;
+    color: #15803d;
+    border-color: #bbf7d0;
+}
+
+/* Live image preview in admin modal */
+.img-preview-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    padding: 0.6rem;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.img-preview-box {
+    width: 48px;
+    height: 66px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    background: #cbd5e1;
+    flex-shrink: 0;
+}
+
+.img-preview-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
 /* ---------------- Responsive ---------------- */
 @media (max-width: 768px) {
     header {
@@ -790,4 +1062,17 @@ footer a {
         padding: 0.6rem 0.5rem;
         font-size: 0.825rem;
     }
+    .book-details-layout {
+        flex-direction: column;
+        align-items: center;
+    }
+    .book-details-cover-container {
+        width: 170px;
+    }
+    .action-confirm-box {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
 }
+

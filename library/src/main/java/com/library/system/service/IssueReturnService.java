@@ -115,7 +115,10 @@ public class IssueReturnService {
                     .bookTitle(b != null ? b.getTitle() : "Book ID #" + tx.getBookId())
                     .bookAuthor(b != null ? b.getAuthor() : "N/A")
                     .bookCategory(b != null ? b.getCategory() : "N/A")
+                    .bookImageUrl(b != null ? b.getImageUrl() : null)
+                    .bookIsbn(b != null ? b.getIsbn() : null)
                     .issueDate(tx.getIssueDate())
+                    .dueDate(calculateDueDate(tx.getIssueDate()))
                     .returnDate(tx.getReturnDate())
                     .status(tx.getStatus())
                     .build();
@@ -145,11 +148,25 @@ public class IssueReturnService {
                     .bookTitle(b != null ? b.getTitle() : "Book #" + tx.getBookId())
                     .bookAuthor(b != null ? b.getAuthor() : "N/A")
                     .bookCategory(b != null ? b.getCategory() : "N/A")
+                    .bookImageUrl(b != null ? b.getImageUrl() : null)
+                    .bookIsbn(b != null ? b.getIsbn() : null)
                     .issueDate(tx.getIssueDate())
+                    .dueDate(calculateDueDate(tx.getIssueDate()))
                     .returnDate(tx.getReturnDate())
                     .status(tx.getStatus())
                     .build();
         }).collect(Collectors.toList());
+    }
+
+    private String calculateDueDate(String issueDate) {
+        if (issueDate == null || issueDate.isBlank()) {
+            return "N/A";
+        }
+        try {
+            return LocalDate.parse(issueDate.trim()).plusDays(14).toString();
+        } catch (Exception e) {
+            return issueDate;
+        }
     }
 
     public DashboardStatsDto getDashboardStats() {

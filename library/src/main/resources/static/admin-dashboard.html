@@ -86,11 +86,12 @@
                 <table>
                     <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Title</th>
-                        <th>Author</th>
+                        <th style="width:70px;">Cover</th>
+                        <th>Book Details</th>
+                        <th>ISBN / Book ID</th>
                         <th>Category</th>
-                        <th>Copies</th>
+                        <th>Total Copies</th>
+                        <th>Available Copies</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -158,13 +159,16 @@
                 <table>
                     <thead>
                     <tr>
+                        <th style="width:70px;">Cover</th>
                         <th>Tx ID</th>
                         <th>Student</th>
-                        <th>Book</th>
+                        <th>Book Details</th>
                         <th>Category</th>
                         <th>Issue Date</th>
+                        <th>Due Date</th>
                         <th>Return Date</th>
                         <th>Status</th>
+                        <th>Action</th>
                     </tr>
                     </thead>
                     <tbody id="adminTransactionsTableBody"></tbody>
@@ -175,12 +179,12 @@
 </div>
 
 <!-- ========================================================
-     MODALS: ADD & EDIT BOOK
+     MODALS: ADD & EDIT BOOK + DETAILS + RETURN
      ======================================================== -->
 
 <!-- Modal: Add Book -->
 <div id="addBookModal" class="modal-overlay">
-    <div class="modal-box">
+    <div class="modal-box" style="max-width:580px;">
         <div class="modal-header">
             <h3>Add New Book to Inventory</h3>
             <button class="modal-close" onclick="closeModal('addBookModal')">✕</button>
@@ -195,13 +199,39 @@
                     <label for="addAuthor">Author</label>
                     <input type="text" id="addAuthor" class="form-control" placeholder="e.g., Robert C. Martin" required>
                 </div>
-                <div class="form-group">
-                    <label for="addCategory">Category</label>
-                    <input type="text" id="addCategory" class="form-control" placeholder="e.g., Software Engineering" required>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                    <div class="form-group">
+                        <label for="addCategory">Category</label>
+                        <input type="text" id="addCategory" class="form-control" placeholder="e.g., Software Engineering" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addIsbn">ISBN / Catalog ID</label>
+                        <input type="text" id="addIsbn" class="form-control" placeholder="e.g., 978-0134494166">
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                    <div class="form-group">
+                        <label for="addTotalCopies">Total Physical Copies</label>
+                        <input type="number" id="addTotalCopies" class="form-control" min="1" value="5" onchange="document.getElementById('addQuantity').value=this.value;" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addQuantity">Available Copies</label>
+                        <input type="number" id="addQuantity" class="form-control" min="0" value="5" required>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label for="addQuantity">Quantity (Copies)</label>
-                    <input type="number" id="addQuantity" class="form-control" min="0" value="1" required>
+                    <label for="addImageUrl">Book Cover Image URL</label>
+                    <input type="text" id="addImageUrl" class="form-control" placeholder="e.g., /images/covers/book-1.svg or custom URL" oninput="updateAddCoverPreview(this.value)">
+                    <div class="img-preview-container">
+                        <div class="img-preview-box">
+                            <img id="addCoverPreview" src="/images/covers/default-cover.svg" alt="Preview" onerror="this.src='/images/covers/default-cover.svg'">
+                        </div>
+                        <span style="font-size:0.8rem;color:var(--text-secondary);">Cover Preview (Leave blank to use default SVG cover)</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="addDescription">Description / Academic Notes</label>
+                    <textarea id="addDescription" class="form-control" rows="3" placeholder="Brief synopsis or syllabus notes..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -214,7 +244,7 @@
 
 <!-- Modal: Edit Book -->
 <div id="editBookModal" class="modal-overlay">
-    <div class="modal-box">
+    <div class="modal-box" style="max-width:580px;">
         <div class="modal-header">
             <h3>Update Book Details</h3>
             <button class="modal-close" onclick="closeModal('editBookModal')">✕</button>
@@ -230,13 +260,39 @@
                     <label for="editAuthor">Author</label>
                     <input type="text" id="editAuthor" class="form-control" required>
                 </div>
-                <div class="form-group">
-                    <label for="editCategory">Category</label>
-                    <input type="text" id="editCategory" class="form-control" required>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                    <div class="form-group">
+                        <label for="editCategory">Category</label>
+                        <input type="text" id="editCategory" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editIsbn">ISBN / Catalog ID</label>
+                        <input type="text" id="editIsbn" class="form-control">
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                    <div class="form-group">
+                        <label for="editTotalCopies">Total Physical Copies</label>
+                        <input type="number" id="editTotalCopies" class="form-control" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editQuantity">Available Copies</label>
+                        <input type="number" id="editQuantity" class="form-control" min="0" required>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label for="editQuantity">Quantity (Copies)</label>
-                    <input type="number" id="editQuantity" class="form-control" min="0" required>
+                    <label for="editImageUrl">Book Cover Image URL</label>
+                    <input type="text" id="editImageUrl" class="form-control" oninput="updateEditCoverPreview(this.value)">
+                    <div class="img-preview-container">
+                        <div class="img-preview-box">
+                            <img id="editCoverPreview" src="/images/covers/default-cover.svg" alt="Preview" onerror="this.src='/images/covers/default-cover.svg'">
+                        </div>
+                        <span style="font-size:0.8rem;color:var(--text-secondary);">Live Cover Preview</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editDescription">Description</label>
+                    <textarea id="editDescription" class="form-control" rows="3"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -244,6 +300,39 @@
                 <button type="submit" class="btn btn-primary">Save Changes</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Modal: Universal Book Details -->
+<div id="bookDetailsModal" class="modal-overlay book-details-modal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 id="bookDetailsHeader">Book Details</h3>
+            <button class="modal-close" onclick="closeModal('bookDetailsModal')">✕</button>
+        </div>
+        <div class="modal-body" id="bookDetailsBody">
+            <!-- Dynamic Content -->
+        </div>
+        <div class="modal-footer" id="bookDetailsFooter">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('bookDetailsModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirm Return Book (Admin) -->
+<div id="returnBookModal" class="modal-overlay">
+    <div class="modal-box" style="max-width:540px;">
+        <div class="modal-header">
+            <h3>Process Book Return</h3>
+            <button class="modal-close" onclick="closeModal('returnBookModal')">✕</button>
+        </div>
+        <div class="modal-body" id="returnModalBody">
+            <!-- Populated dynamically with cover image, title, author, issue date, due date, status -->
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('returnBookModal')">Cancel</button>
+            <button type="button" class="btn btn-success" id="confirmReturnBtn" onclick="confirmReturnBookAction()">Confirm Return</button>
+        </div>
     </div>
 </div>
 
