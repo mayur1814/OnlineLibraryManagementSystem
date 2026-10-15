@@ -89,6 +89,15 @@ public class BookService {
     }
 
     @Transactional
+    public Book updateBookCover(Long id, String imageUrl) {
+        Book existing = bookRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Book not found with ID: " + id));
+        String cleaned = (imageUrl != null) ? imageUrl.trim() : "";
+        existing.setImageUrl(cleaned.isEmpty() ? "/images/covers/default-cover.svg" : cleaned);
+        return bookRepository.save(existing);
+    }
+
+    @Transactional
     public void deleteBook(Long id) {
         if (!bookRepository.existsById(id)) {
             throw new IllegalArgumentException("Book not found with ID: " + id);

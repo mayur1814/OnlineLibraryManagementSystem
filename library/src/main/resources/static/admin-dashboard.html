@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | Online Library Management System</title>
+    <title>Admin Dashboard | SHREE LIBRARY</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body onload="initAdminDashboard()">
@@ -17,7 +17,10 @@
     </a>
     <nav>
         <div class="nav-user">
-            <span class="user-badge" style="background:rgba(239,68,68,0.2);color:#fca5a5;" id="adminName">Administrator</span>
+            <span class="user-badge" id="adminBadge">
+                <span class="user-avatar-circle" style="background:linear-gradient(135deg, #ef4444, #f59e0b);">A</span>
+                <span id="adminName">Administrator</span>
+            </span>
             <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
         </div>
     </nav>
@@ -37,7 +40,7 @@
             <div class="stat-icon emerald">📦</div>
             <div class="stat-info">
                 <div class="stat-number" id="statAdminCopies">--</div>
-                <div class="stat-label">Total Copies</div>
+                <div class="stat-label">Physical Copies</div>
             </div>
         </div>
         <div class="stat-card">
@@ -56,11 +59,11 @@
         </div>
     </div>
 
-    <!-- Admin Tabs -->
+    <!-- Admin Tabs Navigation -->
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('tabBooks', this)">📚 Manage Books</button>
-        <button class="tab-btn" onclick="switchTab('tabStudents', this)">👥 Student Records</button>
-        <button class="tab-btn" onclick="switchTab('tabTransactions', this)">📑 Issue & Return History</button>
+        <button class="tab-btn" onclick="switchTab('tabStudents', this)">👥 Student Accounts</button>
+        <button class="tab-btn" onclick="switchTab('tabTransactions', this)">📑 Issue & Return Records</button>
     </div>
 
     <!-- TAB 1: Manage Books -->
@@ -69,17 +72,50 @@
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Book Inventory Management</h3>
-                    <p style="color:var(--text-secondary);font-size:0.875rem;">Add new books, update existing catalog entries, and manage stock.</p>
+                    <p style="color:var(--text-secondary);font-size:0.875rem;margin-top:0.25rem;">
+                        Add new books, update covers via direct image URLs, and manage stock quantities.
+                    </p>
                 </div>
-                <button class="btn btn-primary btn-sm" onclick="openModal('addBookModal')">+ Add New Book</button>
+                <button class="btn btn-primary" onclick="openModal('addBookModal')">+ Add New Book</button>
             </div>
 
+            <!-- Enhanced Reactive Filter Command Bar -->
             <div class="search-bar">
-                <input type="text" id="adminBookSearch" class="form-control" placeholder="Search books by title, author, or category..." onkeyup="filterAdminBooks()">
-                <select id="adminCategoryFilter" class="form-control" onchange="filterAdminBooks()">
-                    <option value="">All Categories</option>
-                </select>
-                <button class="btn btn-secondary" onclick="document.getElementById('adminBookSearch').value='';filterAdminBooks();">Reset</button>
+                <div class="filter-input-wrap">
+                    <span class="filter-search-icon">🔍</span>
+                    <input type="text" id="adminBookSearch" class="form-control" placeholder="Search by title, author, category, ISBN, or ID..." oninput="filterAdminBooks()">
+                    <button id="adminBookSearchClear" class="filter-clear-btn" onclick="document.getElementById('adminBookSearch').value='';filterAdminBooks();">✕</button>
+                </div>
+
+                <div class="filter-select-wrap">
+                    <select id="adminCategoryFilter" class="form-control" onchange="filterAdminBooks()">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+
+                <div class="filter-select-wrap">
+                    <select id="adminStatusFilter" class="form-control" onchange="filterAdminBooks()">
+                        <option value="all">All Availability</option>
+                        <option value="available">In Stock Only</option>
+                        <option value="unavailable">Out of Stock</option>
+                    </select>
+                </div>
+
+                <div class="filter-select-wrap">
+                    <select id="adminSortBy" class="form-control" onchange="filterAdminBooks()">
+                        <option value="default">Default Order</option>
+                        <option value="title_asc">Title (A to Z)</option>
+                        <option value="title_desc">Title (Z to A)</option>
+                        <option value="copies_desc">Most Copies Available</option>
+                        <option value="copies_asc">Least Copies Available</option>
+                        <option value="id_desc">Newest Added (ID)</option>
+                    </select>
+                </div>
+
+                <div class="filter-results-info">
+                    <span id="adminBooksCount" class="filter-count-badge">Loading books...</span>
+                    <button class="btn btn-secondary btn-sm" onclick="resetAdminBookFilters()">↻ Reset</button>
+                </div>
             </div>
 
             <div class="table-responsive">
@@ -88,12 +124,12 @@
                     <tr>
                         <th style="width:70px;">Cover</th>
                         <th>Book Details</th>
-                        <th>ISBN / Book ID</th>
+                        <th>ISBN / ID</th>
                         <th>Category</th>
-                        <th>Total Copies</th>
-                        <th>Available Copies</th>
+                        <th>Total Stock</th>
+                        <th>Available</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th style="text-align:right;">Actions</th>
                     </tr>
                     </thead>
                     <tbody id="adminBookTableBody"></tbody>
@@ -107,26 +143,49 @@
         <div class="card">
             <div class="card-header">
                 <div>
-                    <h3 class="card-title">Registered Students</h3>
-                    <p style="color:var(--text-secondary);font-size:0.875rem;">View registered student accounts and active book loan status.</p>
+                    <h3 class="card-title">Registered Student Directory</h3>
+                    <p style="color:var(--text-secondary);font-size:0.875rem;margin-top:0.25rem;">
+                        View registered student library accounts and monitor active borrowing activity.
+                    </p>
                 </div>
-                <button class="btn btn-secondary btn-sm" onclick="loadAdminStudents()">↻ Refresh Students</button>
+                <button class="btn btn-secondary btn-sm" onclick="loadAdminStudents()">↻ Refresh List</button>
             </div>
 
             <div class="search-bar">
-                <input type="text" id="adminStudentSearch" class="form-control" placeholder="Search students by name, email, or mobile..." onkeyup="filterAdminStudents()">
+                <div class="filter-input-wrap">
+                    <span class="filter-search-icon">🔍</span>
+                    <input type="text" id="adminStudentSearch" class="form-control" placeholder="Search students by name, email, or mobile..." oninput="filterAdminStudents()">
+                </div>
+                <div class="filter-select-wrap">
+                    <select id="adminStudentRoleFilter" class="form-control" onchange="filterAdminStudents()">
+                        <option value="ALL">All Roles</option>
+                        <option value="STUDENT">Students Only</option>
+                        <option value="ADMIN">Administrators</option>
+                    </select>
+                </div>
+                <div class="filter-select-wrap">
+                    <select id="adminStudentLoanFilter" class="form-control" onchange="filterAdminStudents()">
+                        <option value="ALL">All Borrow Activity</option>
+                        <option value="ACTIVE">Has Active Loans</option>
+                        <option value="NONE">No Active Loans</option>
+                    </select>
+                </div>
+                <div class="filter-results-info">
+                    <span id="adminStudentsCount" class="filter-count-badge">Loading...</span>
+                    <button class="btn btn-secondary btn-sm" onclick="resetAdminStudentFilters()">↻ Reset</button>
+                </div>
             </div>
 
             <div class="table-responsive">
                 <table>
                     <thead>
                     <tr>
-                        <th>Student ID</th>
-                        <th>Full Name</th>
+                        <th>User ID</th>
+                        <th>Student Name</th>
                         <th>Email Address</th>
                         <th>Mobile</th>
                         <th>Role</th>
-                        <th>Loan Activity</th>
+                        <th>Active Loan Status</th>
                     </tr>
                     </thead>
                     <tbody id="adminStudentsTableBody"></tbody>
@@ -140,19 +199,30 @@
         <div class="card">
             <div class="card-header">
                 <div>
-                    <h3 class="card-title">All Issue & Return Transactions</h3>
-                    <p style="color:var(--text-secondary);font-size:0.875rem;">Comprehensive log of all book borrow and return events across the library.</p>
+                    <h3 class="card-title">Issue & Return Transaction History</h3>
+                    <p style="color:var(--text-secondary);font-size:0.875rem;margin-top:0.25rem;">
+                        Audit log of all book loan and return events across the entire institution.
+                    </p>
                 </div>
                 <button class="btn btn-secondary btn-sm" onclick="loadAdminTransactions()">↻ Refresh Transactions</button>
             </div>
 
             <div class="search-bar">
-                <input type="text" id="transactionSearch" class="form-control" placeholder="Search by student name, email, or book title..." onkeyup="filterAdminTransactions()">
-                <select id="transactionStatusFilter" class="form-control" onchange="filterAdminTransactions()">
-                    <option value="">All Statuses</option>
-                    <option value="ISSUED">Currently Issued</option>
-                    <option value="RETURNED">Returned</option>
-                </select>
+                <div class="filter-input-wrap">
+                    <span class="filter-search-icon">🔍</span>
+                    <input type="text" id="transactionSearch" class="form-control" placeholder="Search by student name, email, or book title..." oninput="filterAdminTransactions()">
+                </div>
+                <div class="filter-select-wrap">
+                    <select id="transactionStatusFilter" class="form-control" onchange="filterAdminTransactions()">
+                        <option value="">All Statuses</option>
+                        <option value="ISSUED">Currently Issued</option>
+                        <option value="RETURNED">Returned</option>
+                    </select>
+                </div>
+                <div class="filter-results-info">
+                    <span id="adminTransactionsCount" class="filter-count-badge">Loading...</span>
+                    <button class="btn btn-secondary btn-sm" onclick="resetAdminTransactionFilters()">↻ Reset</button>
+                </div>
             </div>
 
             <div class="table-responsive">
@@ -179,12 +249,12 @@
 </div>
 
 <!-- ========================================================
-     MODALS: ADD & EDIT BOOK + DETAILS + RETURN
+     MODALS: ADD BOOK + EDIT BOOK + QUICK COVER + DETAILS + RETURN
      ======================================================== -->
 
 <!-- Modal: Add Book -->
 <div id="addBookModal" class="modal-overlay">
-    <div class="modal-box" style="max-width:580px;">
+    <div class="modal-box" style="max-width:620px;">
         <div class="modal-header">
             <h3>Add New Book to Inventory</h3>
             <button class="modal-close" onclick="closeModal('addBookModal')">✕</button>
@@ -192,16 +262,18 @@
         <form id="addBookForm" onsubmit="handleAddBook(event)">
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="addTitle">Book Title</label>
-                    <input type="text" id="addTitle" class="form-control" placeholder="e.g., Clean Architecture" required>
+                    <label for="addTitle">Book Title *</label>
+                    <input type="text" id="addTitle" class="form-control" placeholder="e.g., Clean Architecture: A Craftsman's Guide" required>
                 </div>
+
                 <div class="form-group">
-                    <label for="addAuthor">Author</label>
+                    <label for="addAuthor">Author *</label>
                     <input type="text" id="addAuthor" class="form-control" placeholder="e.g., Robert C. Martin" required>
                 </div>
+
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
                     <div class="form-group">
-                        <label for="addCategory">Category</label>
+                        <label for="addCategory">Category *</label>
                         <input type="text" id="addCategory" class="form-control" placeholder="e.g., Software Engineering" required>
                     </div>
                     <div class="form-group">
@@ -209,29 +281,53 @@
                         <input type="text" id="addIsbn" class="form-control" placeholder="e.g., 978-0134494166">
                     </div>
                 </div>
+
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
                     <div class="form-group">
-                        <label for="addTotalCopies">Total Physical Copies</label>
+                        <label for="addTotalCopies">Total Physical Copies *</label>
                         <input type="number" id="addTotalCopies" class="form-control" min="1" value="5" onchange="document.getElementById('addQuantity').value=this.value;" required>
                     </div>
                     <div class="form-group">
-                        <label for="addQuantity">Available Copies</label>
+                        <label for="addQuantity">Available Copies *</label>
                         <input type="number" id="addQuantity" class="form-control" min="0" value="5" required>
                     </div>
                 </div>
+
+                <!-- Live Chrome Image URL Section with 1-Click Clipboard Paste -->
                 <div class="form-group">
-                    <label for="addImageUrl">Book Cover Image URL</label>
-                    <input type="text" id="addImageUrl" class="form-control" placeholder="e.g., /images/covers/book-1.svg or custom URL" oninput="updateAddCoverPreview(this.value)">
+                    <label for="addImageUrl">Book Cover Image URL (Paste from Chrome)</label>
+                    <div class="cover-input-group">
+                        <input type="text" id="addImageUrl" class="form-control" placeholder="Paste image address from Chrome (Amazon, Google, Unsplash...)" oninput="updateCoverPreviewLive(this.value, 'addCoverPreview', 'addCoverStatus')">
+                        <button type="button" class="cover-paste-btn" onclick="pasteFromClipboard('addImageUrl', 'addCoverPreview', 'addCoverStatus')">
+                            📋 Paste from Chrome
+                        </button>
+                    </div>
+
+                    <!-- Live Image Preview Container -->
                     <div class="img-preview-container">
                         <div class="img-preview-box">
-                            <img id="addCoverPreview" src="/images/covers/default-cover.svg" alt="Preview" onerror="this.src='/images/covers/default-cover.svg'">
+                            <img id="addCoverPreview" src="/images/covers/default-cover.svg" alt="Preview" referrerpolicy="no-referrer">
                         </div>
-                        <span style="font-size:0.8rem;color:var(--text-secondary);">Cover Preview (Leave blank to use default SVG cover)</span>
+                        <div class="img-preview-meta">
+                            <div id="addCoverStatus">
+                                <span class="cover-status-badge cover-status-warn">Using Default SVG Cover</span>
+                            </div>
+                            <span style="font-size:0.775rem;color:var(--text-muted);">
+                                Tip: Right click any book cover in Chrome & select <strong>"Copy image address"</strong>, then click Paste.
+                            </span>
+                            <div class="quick-cover-suggestions">
+                                <span style="font-size:0.75rem;color:var(--text-secondary);font-weight:600;">Presets:</span>
+                                <span class="cover-suggestion-chip" onclick="selectPresetCover(0, 'addImageUrl', 'addCoverPreview', 'addCoverStatus')">Clean Code</span>
+                                <span class="cover-suggestion-chip" onclick="selectPresetCover(1, 'addImageUrl', 'addCoverPreview', 'addCoverStatus')">Algorithms</span>
+                                <span class="cover-suggestion-chip" onclick="selectPresetCover(3, 'addImageUrl', 'addCoverPreview', 'addCoverStatus')">Spring Boot</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
                 <div class="form-group">
                     <label for="addDescription">Description / Academic Notes</label>
-                    <textarea id="addDescription" class="form-control" rows="3" placeholder="Brief synopsis or syllabus notes..."></textarea>
+                    <textarea id="addDescription" class="form-control" rows="3" placeholder="Brief syllabus or reference details..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -242,9 +338,9 @@
     </div>
 </div>
 
-<!-- Modal: Edit Book -->
+<!-- Modal: Edit Book Details -->
 <div id="editBookModal" class="modal-overlay">
-    <div class="modal-box" style="max-width:580px;">
+    <div class="modal-box" style="max-width:620px;">
         <div class="modal-header">
             <h3>Update Book Details</h3>
             <button class="modal-close" onclick="closeModal('editBookModal')">✕</button>
@@ -253,16 +349,18 @@
             <input type="hidden" id="editBookId">
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="editTitle">Book Title</label>
+                    <label for="editTitle">Book Title *</label>
                     <input type="text" id="editTitle" class="form-control" required>
                 </div>
+
                 <div class="form-group">
-                    <label for="editAuthor">Author</label>
+                    <label for="editAuthor">Author *</label>
                     <input type="text" id="editAuthor" class="form-control" required>
                 </div>
+
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
                     <div class="form-group">
-                        <label for="editCategory">Category</label>
+                        <label for="editCategory">Category *</label>
                         <input type="text" id="editCategory" class="form-control" required>
                     </div>
                     <div class="form-group">
@@ -270,28 +368,51 @@
                         <input type="text" id="editIsbn" class="form-control">
                     </div>
                 </div>
+
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
                     <div class="form-group">
-                        <label for="editTotalCopies">Total Physical Copies</label>
+                        <label for="editTotalCopies">Total Physical Copies *</label>
                         <input type="number" id="editTotalCopies" class="form-control" min="1" required>
                     </div>
                     <div class="form-group">
-                        <label for="editQuantity">Available Copies</label>
+                        <label for="editQuantity">Available Copies *</label>
                         <input type="number" id="editQuantity" class="form-control" min="0" required>
                     </div>
                 </div>
+
+                <!-- Edit Cover URL with Live Preview & Chrome Paste -->
                 <div class="form-group">
                     <label for="editImageUrl">Book Cover Image URL</label>
-                    <input type="text" id="editImageUrl" class="form-control" oninput="updateEditCoverPreview(this.value)">
+                    <div class="cover-input-group">
+                        <input type="text" id="editImageUrl" class="form-control" placeholder="Paste image address from Chrome" oninput="updateCoverPreviewLive(this.value, 'editCoverPreview', 'editCoverStatus')">
+                        <button type="button" class="cover-paste-btn" onclick="pasteFromClipboard('editImageUrl', 'editCoverPreview', 'editCoverStatus')">
+                            📋 Paste from Chrome
+                        </button>
+                    </div>
+
                     <div class="img-preview-container">
                         <div class="img-preview-box">
-                            <img id="editCoverPreview" src="/images/covers/default-cover.svg" alt="Preview" onerror="this.src='/images/covers/default-cover.svg'">
+                            <img id="editCoverPreview" src="/images/covers/default-cover.svg" alt="Preview" referrerpolicy="no-referrer">
                         </div>
-                        <span style="font-size:0.8rem;color:var(--text-secondary);">Live Cover Preview</span>
+                        <div class="img-preview-meta">
+                            <div id="editCoverStatus">
+                                <span class="cover-status-badge cover-status-ok">Cover Ready</span>
+                            </div>
+                            <span style="font-size:0.775rem;color:var(--text-muted);">
+                                Changes reflect immediately across all student and catalog portals upon saving.
+                            </span>
+                            <div class="quick-cover-suggestions">
+                                <span style="font-size:0.75rem;color:var(--text-secondary);font-weight:600;">Presets:</span>
+                                <span class="cover-suggestion-chip" onclick="selectPresetCover(2, 'editImageUrl', 'editCoverPreview', 'editCoverStatus')">Designing Data</span>
+                                <span class="cover-suggestion-chip" onclick="selectPresetCover(4, 'editImageUrl', 'editCoverPreview', 'editCoverStatus')">AI Modern</span>
+                                <span class="cover-suggestion-chip" onclick="selectPresetCover(5, 'editImageUrl', 'editCoverPreview', 'editCoverStatus')">Design Patterns</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
                 <div class="form-group">
-                    <label for="editDescription">Description</label>
+                    <label for="editDescription">Description / Synopsis</label>
                     <textarea id="editDescription" class="form-control" rows="3"></textarea>
                 </div>
             </div>
@@ -303,6 +424,56 @@
     </div>
 </div>
 
+<!-- Modal: Quick Update Cover Image (NEW Feature) -->
+<div id="quickCoverModal" class="modal-overlay">
+    <div class="modal-box" style="max-width:540px;">
+        <div class="modal-header">
+            <h3>Update Book Cover URL</h3>
+            <button class="modal-close" onclick="closeModal('quickCoverModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom:1rem;">
+                <h4 id="quickCoverBookTitle" style="font-size:1.1rem;color:var(--text-primary);margin-bottom:0.2rem;">Book Title</h4>
+                <p id="quickCoverBookAuthor" style="font-size:0.85rem;color:var(--text-secondary);">Author</p>
+            </div>
+
+            <div class="form-group">
+                <label for="quickCoverUrlInput">Paste New Image URL from Chrome:</label>
+                <div class="cover-input-group">
+                    <input type="text" id="quickCoverUrlInput" class="form-control" placeholder="https://... (Right click image in Chrome -> Copy image address)" oninput="updateCoverPreviewLive(this.value, 'quickCoverPreview', 'quickCoverStatus')">
+                    <button type="button" class="cover-paste-btn" onclick="pasteFromClipboard('quickCoverUrlInput', 'quickCoverPreview', 'quickCoverStatus')">
+                        📋 Paste
+                    </button>
+                </div>
+            </div>
+
+            <div class="img-preview-container">
+                <div class="img-preview-box">
+                    <img id="quickCoverPreview" src="/images/covers/default-cover.svg" alt="Preview" referrerpolicy="no-referrer">
+                </div>
+                <div class="img-preview-meta">
+                    <div id="quickCoverStatus">
+                        <span class="cover-status-badge cover-status-ok">Live Preview</span>
+                    </div>
+                    <span style="font-size:0.775rem;color:var(--text-muted);">
+                        The cover image will update instantly on all student and public catalog views.
+                    </span>
+                    <div class="quick-cover-suggestions">
+                        <span style="font-size:0.75rem;color:var(--text-secondary);font-weight:600;">Sample Covers:</span>
+                        <span class="cover-suggestion-chip" onclick="selectPresetCover(0, 'quickCoverUrlInput', 'quickCoverPreview', 'quickCoverStatus')">Clean Code</span>
+                        <span class="cover-suggestion-chip" onclick="selectPresetCover(1, 'quickCoverUrlInput', 'quickCoverPreview', 'quickCoverStatus')">Algorithms</span>
+                        <span class="cover-suggestion-chip" onclick="selectPresetCover(3, 'quickCoverUrlInput', 'quickCoverPreview', 'quickCoverStatus')">Spring Boot</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('quickCoverModal')">Cancel</button>
+            <button type="button" class="btn btn-primary" id="quickCoverSaveBtn" onclick="handleQuickCoverSave()">Save Cover</button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal: Universal Book Details -->
 <div id="bookDetailsModal" class="modal-overlay book-details-modal">
     <div class="modal-box">
@@ -310,25 +481,19 @@
             <h3 id="bookDetailsHeader">Book Details</h3>
             <button class="modal-close" onclick="closeModal('bookDetailsModal')">✕</button>
         </div>
-        <div class="modal-body" id="bookDetailsBody">
-            <!-- Dynamic Content -->
-        </div>
-        <div class="modal-footer" id="bookDetailsFooter">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('bookDetailsModal')">Close</button>
-        </div>
+        <div class="modal-body" id="bookDetailsBody"></div>
+        <div class="modal-footer" id="bookDetailsFooter"></div>
     </div>
 </div>
 
-<!-- Modal: Confirm Return Book (Admin) -->
+<!-- Modal: Process Book Return -->
 <div id="returnBookModal" class="modal-overlay">
     <div class="modal-box" style="max-width:540px;">
         <div class="modal-header">
             <h3>Process Book Return</h3>
             <button class="modal-close" onclick="closeModal('returnBookModal')">✕</button>
         </div>
-        <div class="modal-body" id="returnModalBody">
-            <!-- Populated dynamically with cover image, title, author, issue date, due date, status -->
-        </div>
+        <div class="modal-body" id="returnModalBody"></div>
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeModal('returnBookModal')">Cancel</button>
             <button type="button" class="btn btn-success" id="confirmReturnBtn" onclick="confirmReturnBookAction()">Confirm Return</button>
@@ -337,7 +502,7 @@
 </div>
 
 <footer>
-    <p>© 2026 Online Library Management System — Admin Portal</p>
+    <p>© 2026 Online Library Management System — Admin Control Center</p>
 </footer>
 
 <script src="js/script.js"></script>

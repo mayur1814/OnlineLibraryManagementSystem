@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard | Library Management System</title>
+    <title>Student Portal | SHREE LIBRARY</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body onload="initStudentDashboard()">
@@ -12,19 +12,22 @@
         <div class="brand-icon">🎓</div>
         <div class="brand-text">
             <h1>SHREE LIBRARY</h1>
-            <span>Student Portal</span>
+            <span>Student Academic Portal</span>
         </div>
     </a>
     <nav>
         <div class="nav-user">
-            <span class="user-badge" id="studentName">Student</span>
+            <span class="user-badge" id="studentBadge">
+                <span class="user-avatar-circle">S</span>
+                <span id="studentName">Student</span>
+            </span>
             <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
         </div>
     </nav>
 </header>
 
 <div class="container">
-    <!-- Welcome Greeting & Quick Stats -->
+    <!-- Welcome Greeting & Quick KPI Stats -->
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-icon emerald">📚</div>
@@ -61,23 +64,55 @@
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Library Book Catalog</h3>
-                    <p style="color:var(--text-secondary);font-size:0.875rem;">Browse or search books by title, author, or category.</p>
+                    <p style="color:var(--text-secondary);font-size:0.875rem;margin-top:0.25rem;">
+                        Browse academic textbooks, search by topic, and issue copies directly to your account.
+                    </p>
+                </div>
+                <!-- View Mode Switcher -->
+                <div class="view-toggle-group">
+                    <button class="view-toggle-btn student-view-btn active" data-mode="table" onclick="setStudentCatalogView('table')" title="Table View">☰ List</button>
+                    <button class="view-toggle-btn student-view-btn" data-mode="grid" onclick="setStudentCatalogView('grid')" title="Card Grid View">⊞ Cards</button>
                 </div>
             </div>
 
+            <!-- Enhanced Student Filter Command Bar -->
             <div class="search-bar">
-                <input type="text" id="studentSearch" class="form-control" placeholder="Search by title, author, or category..." onkeyup="filterStudentBooks()">
-                <select id="categoryFilter" class="form-control" onchange="filterStudentBooks()">
-                    <option value="">All Categories</option>
-                </select>
-                <div style="display:flex;align-items:center;gap:0.5rem;padding:0 0.5rem;">
-                    <input type="checkbox" id="availFilter" onchange="filterStudentBooks()" style="width:18px;height:18px;cursor:pointer;">
-                    <label for="availFilter" style="font-size:0.85rem;font-weight:600;cursor:pointer;margin-bottom:0;">In Stock Only</label>
+                <div class="filter-input-wrap">
+                    <span class="filter-search-icon">🔍</span>
+                    <input type="text" id="studentSearch" class="form-control" placeholder="Search books by title, author, category, ISBN..." oninput="filterStudentBooks()">
+                    <button id="studentSearchClear" class="filter-clear-btn" onclick="document.getElementById('studentSearch').value='';filterStudentBooks();">✕</button>
                 </div>
-                <button class="btn btn-secondary" onclick="document.getElementById('studentSearch').value='';document.getElementById('availFilter').checked=false;filterStudentBooks();">Clear</button>
+
+                <div class="filter-select-wrap">
+                    <select id="categoryFilter" class="form-control" onchange="filterStudentBooks()">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+
+                <div class="filter-select-wrap">
+                    <select id="studentAvailFilter" class="form-control" onchange="filterStudentBooks()">
+                        <option value="all">All Books</option>
+                        <option value="available">In Stock Only</option>
+                        <option value="unavailable">Out of Stock</option>
+                    </select>
+                </div>
+
+                <div class="filter-select-wrap">
+                    <select id="studentSort" class="form-control" onchange="filterStudentBooks()">
+                        <option value="default">Default Order</option>
+                        <option value="title_asc">Title (A to Z)</option>
+                        <option value="copies_desc">Most Copies Available</option>
+                    </select>
+                </div>
+
+                <div class="filter-results-info">
+                    <span id="studentResultsCount" class="filter-count-badge">Loading catalog...</span>
+                    <button class="btn btn-secondary btn-sm" onclick="resetStudentBookFilters()">↻ Reset</button>
+                </div>
             </div>
 
-            <div class="table-responsive">
+            <!-- Table View -->
+            <div id="studentCatalogTableWrap" class="table-responsive">
                 <table>
                     <thead>
                     <tr>
@@ -93,6 +128,9 @@
                     <tbody id="studentBookTableBody"></tbody>
                 </table>
             </div>
+
+            <!-- Card Grid View -->
+            <div id="studentBooksGrid" style="display:none;"></div>
         </div>
     </div>
 
@@ -101,10 +139,31 @@
         <div class="card">
             <div class="card-header">
                 <div>
-                    <h3 class="card-title">My Loan History & Active Issues</h3>
-                    <p style="color:var(--text-secondary);font-size:0.875rem;">Track books you have currently issued or returned.</p>
+                    <h3 class="card-title">My Issued Books & Loan History</h3>
+                    <p style="color:var(--text-secondary);font-size:0.875rem;margin-top:0.25rem;">
+                        Track your borrowed books, monitoring due dates and return statuses.
+                    </p>
                 </div>
                 <button class="btn btn-secondary btn-sm" onclick="loadStudentIssuedRecords()">↻ Refresh History</button>
+            </div>
+
+            <!-- My Loans Search & Filter Bar -->
+            <div class="search-bar">
+                <div class="filter-input-wrap">
+                    <span class="filter-search-icon">🔍</span>
+                    <input type="text" id="studentLoanSearch" class="form-control" placeholder="Search my loans by book title, author, or Tx ID..." oninput="filterStudentLoans()">
+                </div>
+                <div class="filter-select-wrap">
+                    <select id="studentLoanStatusFilter" class="form-control" onchange="filterStudentLoans()">
+                        <option value="ALL">All Loans (Active & Returned)</option>
+                        <option value="ISSUED">Currently Issued Only</option>
+                        <option value="RETURNED">Returned Only</option>
+                    </select>
+                </div>
+                <div class="filter-results-info">
+                    <span id="studentLoansCount" class="filter-count-badge">Loading...</span>
+                    <button class="btn btn-secondary btn-sm" onclick="resetStudentLoanFilters()">↻ Reset</button>
+                </div>
             </div>
 
             <div class="table-responsive">
@@ -135,12 +194,8 @@
             <h3 id="bookDetailsHeader">Book Details</h3>
             <button class="modal-close" onclick="closeModal('bookDetailsModal')">✕</button>
         </div>
-        <div class="modal-body" id="bookDetailsBody">
-            <!-- Dynamic Content -->
-        </div>
-        <div class="modal-footer" id="bookDetailsFooter">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('bookDetailsModal')">Close</button>
-        </div>
+        <div class="modal-body" id="bookDetailsBody"></div>
+        <div class="modal-footer" id="bookDetailsFooter"></div>
     </div>
 </div>
 
@@ -151,29 +206,10 @@
             <h3>Issue Book Confirmation</h3>
             <button class="modal-close" onclick="closeModal('issueBookModal')">✕</button>
         </div>
-        <div class="modal-body" id="issueModalBody">
-            <!-- Populated dynamically with cover image, title, author, status -->
-        </div>
+        <div class="modal-body" id="issueModalBody"></div>
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeModal('issueBookModal')">Cancel</button>
             <button type="button" class="btn btn-primary" id="confirmIssueBtn" onclick="confirmIssueBookAction()">Confirm & Issue Book</button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal: Confirm Return Book -->
-<div id="returnBookModal" class="modal-overlay">
-    <div class="modal-box" style="max-width:540px;">
-        <div class="modal-header">
-            <h3>Return Book Confirmation</h3>
-            <button class="modal-close" onclick="closeModal('returnBookModal')">✕</button>
-        </div>
-        <div class="modal-body" id="returnModalBody">
-            <!-- Populated dynamically with cover image, title, author, issue date, due date, status -->
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('returnBookModal')">Cancel</button>
-            <button type="button" class="btn btn-success" id="confirmReturnBtn" onclick="confirmReturnBookAction()">Confirm & Return Book</button>
         </div>
     </div>
 </div>

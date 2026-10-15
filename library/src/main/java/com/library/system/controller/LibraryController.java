@@ -147,6 +147,20 @@ public class LibraryController {
         }
     }
 
+    @PatchMapping("/books/{id}/cover")
+    public ResponseEntity<?> updateBookCover(@PathVariable Long id, @RequestBody Map<String, String> payload, HttpSession session) {
+        if (!isAdmin(session)) {
+            return forbiddenResponse();
+        }
+        try {
+            String imageUrl = payload.get("imageUrl");
+            Book updated = bookService.updateBookCover(id, imageUrl);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/books/{id}")
     public ResponseEntity<?> deleteBook(@PathVariable Long id, HttpSession session) {
         if (!isAdmin(session)) {

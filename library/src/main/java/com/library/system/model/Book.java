@@ -36,7 +36,7 @@ public class Book {
     @Column(name = "total_copies")
     private Integer totalCopies;
 
-    @Column(name = "image_url", length = 1000)
+    @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
 
     @Column(name = "description", length = 2000)

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Online Library Management System | Academic Portal</title>
+    <title>SHREE LIBRARY | Academic Knowledge Portal</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body onload="loadPublicCatalog()">
@@ -11,25 +11,28 @@
     <a href="index.html" class="brand">
         <div class="brand-icon">📚</div>
         <div class="brand-text">
-            <h1> SHREE LIBRARY </h1>
+            <h1>SHREE LIBRARY</h1>
+            <span>Academic Knowledge Portal</span>
         </div>
     </a>
     <nav>
         <a href="index.html" class="active">Home</a>
-        <a href="login.html">Login</a>
-        <a href="register.html">Student Register</a>
+        <a href="login.html">Sign In</a>
+        <a href="register.html" class="btn btn-primary btn-sm" style="color:#ffffff;">Register</a>
     </nav>
 </header>
 
 <div class="container">
     <!-- Hero Banner -->
     <div class="hero">
-        <span class="hero-badge">Enterprise Library Solution</span>
-        <h2>Explore, Issue & Manage Books Instantly</h2>
-        <p> Search academic books, manage loan records, and track transactions with ease.</p>
+        <span class="hero-badge">⚡ Modern Enterprise Library Solution</span>
+        <h2>Explore, Issue & Manage Academic Books Instantly</h2>
+        <p>
+            Seamlessly search catalog collections, track loan due dates, and update book covers in real-time with our intelligent academic library management system.
+        </p>
         <div class="hero-actions">
-            <a href="login.html" class="btn btn-primary" style="padding:0.75rem 1.75rem;font-size:1rem;">Student & Admin Login</a>
-            <a href="register.html" class="btn btn-secondary" style="padding:0.75rem 1.75rem;font-size:1rem;">New Student Registration</a>
+            <a href="login.html" class="btn btn-primary" style="padding:0.8rem 1.85rem;font-size:1rem;">Student & Admin Login →</a>
+            <a href="register.html" class="btn btn-secondary" style="padding:0.8rem 1.85rem;font-size:1rem;">New Student Registration</a>
         </div>
     </div>
 
@@ -69,18 +72,18 @@
     <div class="features-grid">
         <div class="feature-card">
             <div class="feature-icon">🔍</div>
-            <h3>Smart Book Search</h3>
-            <p>Filter books by title, author, or academic category in real-time with instant availability status.</p>
+            <h3>Smart Multi-Filter Search</h3>
+            <p>Filter books by title, author, category, or real-time availability with instant dynamic updates.</p>
         </div>
         <div class="feature-card">
             <div class="feature-icon">📑</div>
-            <h3>1-Click Book Issue</h3>
+            <h3>Instant 1-Click Book Loan</h3>
             <p>Students can reserve and issue available books instantly with automatic inventory deduction.</p>
         </div>
         <div class="feature-card">
-            <div class="feature-icon">🛡️</div>
-            <h3>Admin Management</h3>
-            <p>Comprehensive administrative tools to add, edit, delete books, view students, and track all return records.</p>
+            <div class="feature-icon">🖼️</div>
+            <h3>Live Chrome Cover Integration</h3>
+            <p>Administrators can paste any image URL directly from Chrome to update book covers live.</p>
         </div>
     </div>
 
@@ -89,29 +92,58 @@
         <div class="card-header">
             <div>
                 <h3 class="card-title">Library Book Catalog</h3>
-                <p style="color:var(--text-secondary);font-size:0.875rem;">Browse currently cataloged titles. Log in to issue books.</p>
+                <p style="color:var(--text-secondary);font-size:0.875rem;margin-top:0.25rem;">
+                    Explore cataloged textbooks and academic publications. Sign in to issue books to your account.
+                </p>
             </div>
-            <div>
-                <a href="login.html" class="btn btn-primary btn-sm">Sign in to Issue Books →</a>
+            <div style="display:flex;align-items:center;gap:0.75rem;">
+                <!-- View Mode Switcher -->
+                <div class="view-toggle-group">
+                    <button class="view-toggle-btn public-view-btn active" data-mode="table" onclick="setPublicCatalogView('table')" title="Table View">☰ List</button>
+                    <button class="view-toggle-btn public-view-btn" data-mode="grid" onclick="setPublicCatalogView('grid')" title="Card Grid View">⊞ Cards</button>
+                </div>
+                <a href="login.html" class="btn btn-primary btn-sm">Sign In to Issue →</a>
             </div>
         </div>
 
+        <!-- Filter Command Bar -->
         <div class="search-bar">
-            <input type="text" id="catalogSearch" class="form-control" placeholder="Search books by title, author, or category..." onkeyup="filterPublicCatalog()">
-            <select id="catalogCategory" class="form-control" onchange="filterPublicCatalog()">
-                <option value="">All Categories</option>
-                <option value="Software Engineering">Software Engineering</option>
-                <option value="Computer Science">Computer Science</option>
-                <option value="Programming">Programming</option>
-                <option value="Web Development">Web Development</option>
-                <option value="Database Systems">Database Systems</option>
-                <option value="AI & Machine Learning">AI & Machine Learning</option>
-                <option value="Mathematics">Mathematics</option>
-            </select>
-            <button class="btn btn-secondary" onclick="document.getElementById('catalogSearch').value='';document.getElementById('catalogCategory').value='';filterPublicCatalog();">Reset</button>
+            <div class="filter-input-wrap">
+                <span class="filter-search-icon">🔍</span>
+                <input type="text" id="catalogSearch" class="form-control" placeholder="Search catalog by title, author, category, or ISBN..." oninput="filterPublicCatalog()">
+                <button id="catalogSearchClear" class="filter-clear-btn" onclick="document.getElementById('catalogSearch').value='';filterPublicCatalog();">✕</button>
+            </div>
+
+            <div class="filter-select-wrap">
+                <select id="catalogCategory" class="form-control" onchange="filterPublicCatalog()">
+                    <option value="">All Categories</option>
+                </select>
+            </div>
+
+            <div class="filter-select-wrap">
+                <select id="catalogAvailFilter" class="form-control" onchange="filterPublicCatalog()">
+                    <option value="all">All Books</option>
+                    <option value="available">In Stock Only</option>
+                    <option value="unavailable">Out of Stock</option>
+                </select>
+            </div>
+
+            <div class="filter-select-wrap">
+                <select id="catalogSort" class="form-control" onchange="filterPublicCatalog()">
+                    <option value="default">Default Order</option>
+                    <option value="title_asc">Title (A to Z)</option>
+                    <option value="copies_desc">Most Copies Available</option>
+                </select>
+            </div>
+
+            <div class="filter-results-info">
+                <span id="catalogResultsCount" class="filter-count-badge">Loading books...</span>
+                <button class="btn btn-secondary btn-sm" onclick="resetPublicCatalogFilters()">↻ Reset</button>
+            </div>
         </div>
 
-        <div class="table-responsive">
+        <!-- Table View Wrap -->
+        <div id="publicCatalogTableWrap" class="table-responsive">
             <table>
                 <thead>
                 <tr>
@@ -127,6 +159,9 @@
                 <tbody id="publicBooksTbody"></tbody>
             </table>
         </div>
+
+        <!-- Card Grid View Container -->
+        <div id="publicBooksGrid" style="display:none;"></div>
     </div>
 </div>
 
@@ -137,18 +172,13 @@
             <h3 id="bookDetailsHeader">Book Catalog Details</h3>
             <button class="modal-close" onclick="closeModal('bookDetailsModal')">✕</button>
         </div>
-        <div class="modal-body" id="bookDetailsBody">
-            <!-- Populated dynamically via JS -->
-        </div>
-        <div class="modal-footer" id="bookDetailsFooter">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('bookDetailsModal')">Close</button>
-        </div>
+        <div class="modal-body" id="bookDetailsBody"></div>
+        <div class="modal-footer" id="bookDetailsFooter"></div>
     </div>
 </div>
 
 <footer>
-    <p>© 2026 Online Library Management System </p>
-    <p style="margin-top:0.3rem;"></p>
+    <p>© 2026 Online Library Management System — Academic Knowledge Center</p>
 </footer>
 
 <script src="js/script.js"></script>
